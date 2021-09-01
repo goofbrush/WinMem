@@ -1,7 +1,6 @@
 #include <Windows.h>
 #include <TlHelp32.h>
 
-
 #include <iostream>
 
 
@@ -18,72 +17,57 @@ public:
   }
 
   bool checkValidity() {
-    bool isValid = IsWindow(Window);
+    bool isValid = IsWindow(Window); // Checks if the window is still open and valid
     if(!isValid) { std::cout << "Lost Connect to the Application" << std::endl; }
     return isValid;
   }
 
+
+// Read Functions
+  template <typename Type> // Syntax -> Memory.readValue<Type>(Addr,Based?)
+  Type readValue(uintptr_t Addr, bool Based = false) { Type Value;
+    if(Based) Addr+=BaseAddr;
+    ReadProcessMemory(Handle, (LPVOID)Addr, &Value, sizeof(Value), 0);
+    return Value;
+  }
+
+  uintptr_t readPointer(uintptr_t Addr, bool Based = false) {
+    if(Based) Addr+=BaseAddr;
+    ReadProcessMemory(Handle, (LPVOID)Addr, &Addr, sizeof(unsigned int), 0);
+    return Addr;
+  }
+
+  template <typename Type> // Syntax -> Memory.readValueFromPointer<Type>(Addr,Based?,Offset)
+  Type readValueFromPointer(uintptr_t Addr, bool Based = false, uintptr_t LocalOffset = 0x0) {
+    if(Based) Addr+=BaseAddr;
+    uintptr_t Pointer = readPointer(Addr);
+    return readValue<Type>(Pointer+LocalOffset);
+  }
+
+
+// Write Functions
   // template <typename Type>
-  // Type writeValue(LPVOID Addr, Type Value) {
-  //   WriteProcessMemory(Handle, (PBYTE*)Addr, &Value, sizeof(Value), 0);
+  // Type writeValue(uintptr_t Addr, Type Value, bool OffsetByBase = false) {
+  //   WriteProcessMemory(Handle, (PBYTE*)getAddress(Addr, OffsetByBase), &Value, sizeof(Value), 0);
   //   return Value;
   // }
-  template <typename Type>
-  Type writeValue(uintptr_t Addr, Type Value, bool OffsetByBase = false) {
-    WriteProcessMemory(Handle, (PBYTE*)getAddress(Addr, OffsetByBase), &Value, sizeof(Value), 0);
-    return Value;
-  }
 
-  template <typename Type>
-  Type readValue(LPVOID Addr) { Type Value;
-    ReadProcessMemory(Handle, (PBYTE*)Addr, &Value, sizeof(Value), 0);
-    return Value;
-  }
-  template <typename Type>
-  Type readValue(uintptr_t Addr, bool OffsetByBase = false) { Type Value;
-    ReadProcessMemory(Handle, (PBYTE*)getAddress(Addr, OffsetByBase), &Value, sizeof(Value), 0);
-    return Value;
-  }
+  // template <typename Type> // Syntax -> Memory.readValueFromPointer<Type>(Addr,Based?,Offset)
+  // Type writeValueToPointer(uintptr_t Addr, Type Value, bool OffsetByBase = false, uintptr_t LocalOffset = 0x0) {
+  //   // std::cout << "hi";
+  //   uintptr_t Pointer = readPointer<float>(getAddress(Addr, OffsetByBase));
+  //   return writeValue<Type>(getAddress(Pointer+LocalOffset), Value);
+  // }
 
-  template <typename Type>
-  uintptr_t readPointer(LPVOID Addr) { uintptr_t Value;
-    ReadProcessMemory(Handle, (PBYTE*)Addr, &Value, sizeof(Type), 0);
-    return Value;
-  }
-  template <typename Type>
-  uintptr_t readPointer(uintptr_t Addr) { uintptr_t Value;
-    ReadProcessMemory(Handle, (PBYTE*)Addr, &Value, sizeof(Type), 0);
-    return Value;
-  }
-  template <typename Type>
-  uintptr_t readPointer (uintptr_t Addr, bool OffsetByBase) { uintptr_t Value;
-    Addr = getAddress(Addr, OffsetByBase);
-    ReadProcessMemory(Handle, (PBYTE*)((LPVOID)Addr), &Value, sizeof(Addr), 0);
-    return Value;
-  }
+  uintptr_t getBase() { return BaseAddr; }
 
-  template <typename Type> // Syntax -> Memory.readValueFromPointer<Type>(Addr,Based?,Offset)
-  Type readValueFromPointer(uintptr_t Addr, bool OffsetByBase = false, uintptr_t LocalOffset = 0x0) {
-    uintptr_t Pointer = readPointer<float>(getAddress(Addr, OffsetByBase));
-    return readValue<Type>(getAddress(Pointer+LocalOffset));
-  }
-  template <typename Type> // Syntax -> Memory.readValueFromPointer<Type>(Addr,Based?,Offset)
-  Type writeValueToPointer(uintptr_t Addr, Type Value, bool OffsetByBase = false, uintptr_t LocalOffset = 0x0) {
-    // std::cout << "hi";
-    uintptr_t Pointer = readPointer<float>(getAddress(Addr, OffsetByBase));
-    return writeValue<Type>(getAddress(Pointer+LocalOffset), Value);
-  }
-
-  uintptr_t getAddress(uintptr_t Addr, bool OffsetByBase = false) {
-    if(OffsetByBase) { return (BaseAddr + Addr); } // Offsets the address relative to the base address
-    else { return Addr; } // Returns the int stored pointer as a void pointer
-  }
-
-//private:
+private:
   HWND Window;    // Racer Window
   DWORD ProcID;   // Racer Thread ID
   HANDLE Handle;  // Racer Process Handle
   uintptr_t BaseAddr; // Base Address of Racer
+
+
 
   bool CreateHandle(const char* windowName) {
     Window = FindWindowA(NULL, windowName);
