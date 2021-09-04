@@ -5,7 +5,7 @@
 class Memory
 {
 public:
-  Memory(std::string) { throw std::invalid_argument( "Dont use this constructor" ); }
+  // Memory(std::string) { throw std::invalid_argument( "Dont use this constructor" ); }
   Memory(const char* windowName, const char* executableName) {
     CreateHandle(windowName); // Connects with the game and gets a handle with the PROCESS_ALL_ACCESS flag
     GetModuleBaseAddress(executableName); // Finds the base address of the program
@@ -20,38 +20,41 @@ public:
 
 // Read Functions
   template <typename Type> // Syntax -> Memory.readValue<Type>(Addr,Based?)
-  Type readValue(uintptr_t Addr, bool Based = false) { Type Value;
-    if(Based) Addr+=BaseAddr;
-    ReadProcessMemory(Handle, (LPVOID)Addr, &Value, sizeof(Value), 0);
-    return Value;
+  Type readValue(uintptr_t address, bool based = false) { Type output;
+    if(based) address+=BaseAddr;
+    ReadProcessMemory(Handle, (LPVOID)address, &Value, sizeof(Value), 0);
+    return output;
   }
 
-  uintptr_t readPointer(uintptr_t Addr, bool Based = false) {
-    if(Based) Addr+=BaseAddr;
-    ReadProcessMemory(Handle, (LPVOID)Addr, &Addr, sizeof(unsigned int), 0);
-    return Addr;
+  uintptr_t readPointer(uintptr_t address, bool based = false) {
+    if(based) address+=BaseAddr;
+    ReadProcessMemory(Handle, (LPVOID)address, &address, sizeof(unsigned int), 0);
+    return address;
+
+    // return readValue<uintptr_t>(address, Based);
   }
 
   template <typename Type> // Syntax -> Memory.readValueFromPointer<Type>(Addr,Based?,Offset)
-  Type readValueFromPointer(uintptr_t Addr, bool Based = false, uintptr_t LocalOffset = 0x0) {
-    if(Based) Addr+=BaseAddr;
-    uintptr_t Pointer = readPointer(Addr);
-    return readValue<Type>(Pointer+LocalOffset);
+  Type readValueFromPointer(uintptr_t address, bool based = false, uintptr_t localOffset = 0x0) {
+    if(based) address+=BaseAddr;
+    uintptr_t pointer = readPointer(address);
+    return readValue<Type>(pointer+localOffset);
+
+    // uintptr_t pointer = readPointer(address,based);
+    // return readValue<Type>(pointer+localOffset);
   }
 
 
-// Write Functions
   // template <typename Type>
-  // Type writeValue(uintptr_t Addr, Type Value, bool OffsetByBase = false) {
-  //   WriteProcessMemory(Handle, (PBYTE*)getAddress(Addr, OffsetByBase), &Value, sizeof(Value), 0);
-  //   return Value;
+  // void writeValue(Type input, uintptr_t address, bool based = false) {
+  //   if(Based) Addr+=BaseAddr;
+  //   WriteProcessMemory(Handle, (LPVOID)Addr, input, sizeof(input), 0);
   // }
 
-  // template <typename Type> // Syntax -> Memory.readValueFromPointer<Type>(Addr,Based?,Offset)
-  // Type writeValueToPointer(uintptr_t Addr, Type Value, bool OffsetByBase = false, uintptr_t LocalOffset = 0x0) {
-  //   // std::cout << "hi";
-  //   uintptr_t Pointer = readPointer<float>(getAddress(Addr, OffsetByBase));
-  //   return writeValue<Type>(getAddress(Pointer+LocalOffset), Value);
+  // template <typename Type>
+  // void writeValueToPointer(Type input, uintptr_t address, bool based = false, uintptr_t localOffset = 0x0) {
+  //   uintptr_t pointer = readPointer(address,based);
+  //   writeValue<Type>(input, pointer+localOffset);
   // }
 
   uintptr_t getBase() { return BaseAddr; }
