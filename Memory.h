@@ -1,16 +1,11 @@
 #include <Windows.h>
 #include <TlHelp32.h>
 
-#include <iostream>
-
-
-using PTR = uintptr_t;
-using BYTE = unsigned char;
-
 
 class Memory
 {
 public:
+  Memory(std::string) { throw std::invalid_argument( "Dont use this constructor" ); }
   Memory(const char* windowName, const char* executableName) {
     CreateHandle(windowName); // Connects with the game and gets a handle with the PROCESS_ALL_ACCESS flag
     GetModuleBaseAddress(executableName); // Finds the base address of the program
